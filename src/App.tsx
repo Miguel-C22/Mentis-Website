@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Privacy from './pages/Privacy'
@@ -8,20 +8,34 @@ import Contact from './pages/Contact'
 
 export type Theme = 'dark' | 'light'
 
-function ScrollAndTitle() {
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Mentis — Everything you learn, made yours',
+  '/privacy': 'Privacy Policy — Mentis',
+  '/terms': 'Terms of Use — Mentis',
+  '/support': 'Support & FAQ — Mentis',
+  '/contact': 'Contact — Mentis',
+}
+
+function useScrollAndTitle() {
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo(0, 0)
-    const titles: Record<string, string> = {
-      '/': 'Mentis — Everything you learn, made yours',
-      '/privacy': 'Privacy Policy — Mentis',
-      '/terms': 'Terms of Use — Mentis',
-      '/support': 'Support & FAQ — Mentis',
-      '/contact': 'Contact — Mentis',
-    }
-    document.title = titles[pathname] ?? 'Mentis'
+    document.title = PAGE_TITLES[pathname] ?? 'Mentis'
   }, [pathname])
-  return null
+}
+
+function AppRoutes({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+  useScrollAndTitle()
+  return (
+    <Routes>
+      <Route path="/" element={<Home theme={theme} onToggleTheme={onToggleTheme} />} />
+      <Route path="/privacy" element={<Privacy theme={theme} onToggleTheme={onToggleTheme} />} />
+      <Route path="/terms" element={<Terms theme={theme} onToggleTheme={onToggleTheme} />} />
+      <Route path="/support" element={<Support theme={theme} onToggleTheme={onToggleTheme} />} />
+      <Route path="/contact" element={<Contact theme={theme} onToggleTheme={onToggleTheme} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
 
 export default function App() {
@@ -34,22 +48,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('mentis-theme', theme)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#EAEAEA' : '#1A1A1A')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      theme === 'light' ? '#EAEAEA' : '#1A1A1A',
+    )
   }, [theme])
 
-  const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark')
+  const toggleTheme = useCallback(() => {
+    setTheme((value) => (value === 'dark' ? 'light' : 'dark'))
+  }, [])
 
-  return (
-    <>
-      <ScrollAndTitle />
-      <Routes>
-        <Route path="/" element={<Home theme={theme} onToggleTheme={toggleTheme} />} />
-        <Route path="/privacy" element={<Privacy theme={theme} onToggleTheme={toggleTheme} />} />
-        <Route path="/terms" element={<Terms theme={theme} onToggleTheme={toggleTheme} />} />
-        <Route path="/support" element={<Support theme={theme} onToggleTheme={toggleTheme} />} />
-        <Route path="/contact" element={<Contact theme={theme} onToggleTheme={toggleTheme} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
-  )
+  return <AppRoutes theme={theme} onToggleTheme={toggleTheme} />
 }
